@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use PHPShopify;
 use App\Models\Shop;
+use Illuminate\Support\Facades\Http;
 
 
 class InstallController extends Controller
@@ -70,6 +71,32 @@ class InstallController extends Controller
         return redirect($url);
     }
 
+    protected function registerUninstallWebhook($shopName, $accessToken)
+    {
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $accessToken
+        ])->post("https://{$shopName}/admin/api/2020-07/webhooks.json",
+            [
+                'webhook' => [
+                    'topic' => 'app/uninstalled',
+                    'address' => $this->urlGenerator->route('uninstallHook'),
+                    'format' => 'json'
+                ]
+            ]
+        );
+        return $response->status() >= 200 && $response->status() < 300;
+    }
+
+    public function uninstall(Request $request)
+    {
+        $shop = PHPShopify\ShopifySDK::$config['ShopUrl'];
+        $shop = Shop::where('shop', $shop)->first();
+        if ($shop) {
+            $shop->delete();
+        }
+        return response('', 200);
+    }
+
     /**
      * After reviewing the required access from \App\Http\Controllers\InstallController::install, Shopify will redirect
      * here and ask us to authenticate the shop's identity (comparing nonce and HMAC). Once we've done that we request
@@ -84,6 +111,7 @@ class InstallController extends Controller
 
         if (!isset(PHPShopify\ShopifySDK::$config['AccessToken'])) {
             $accessToken = PHPShopify\AuthHelper::getAccessToken();
+            $this->registerUninstallWebhook($shopName, $accessToken);
 
             $shopModel = new Shop();
             $shopModel->shop = $shopName;
