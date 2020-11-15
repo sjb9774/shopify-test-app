@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use PHPShopify;
 use App\Models\Shop;
 use Illuminate\Support\Facades\Http;
@@ -84,12 +85,18 @@ class InstallController extends Controller
                 ]
             ]
         );
+        $success = $response->status() >= 200 && $response->status() < 300;
+        Log::info("Uninstall webhook response code {$response->status()}");
+        if (!$success) {
+            Log::info("Response: {$response->body()}");
+        }
         return $response->status() >= 200 && $response->status() < 300;
     }
 
     public function uninstall(Request $request)
     {
         $shop = PHPShopify\ShopifySDK::$config['ShopUrl'];
+        Log::info("Uninstalling shop: $shop");
         $shop = Shop::where('shop', $shop)->first();
         if ($shop) {
             $shop->delete();
@@ -138,77 +145,4 @@ class InstallController extends Controller
         return $result;
     }
 
-    /**
-     * @param Request $request
-     * @return bool
-     */
-    protected function compareNonce(Request $request)
-    {
-        return $request->get('state') === $this->getInstallNonce();
-    }
-
-    /**
-     * @param Request $request
-     * @return bool
-     */
-    protected function compareHmac(Request $request)
-    {
-        $givenHmacValue = $request->get('hmac');
-        $allParameters = $request->all();
-        // the query string minus the HMAC value should digest to the HMAC value
-        unset($allParameters['hmac']);
-        // reconstruct query string without HMAC
-        ksort($allParameters);
-        $queryString = $this->constructUrlParams($allParameters);
-        $calculatedHmacValue = hash_hmac('sha256', $queryString, env('SHARED_SECRET'));
-        return hash_equals($calculatedHmacValue, $givenHmacValue);
-
-    }
-
-    /**
-     * @param Request $request
-     * @return bool
-     */
-    protected function isValidHostname(Request $request)
-    {
-        // provided in Shopify docs: https://shopify.dev/tutorials/authenticate-with-oauth#step-3-confirm-installation
-        // Had to modify to make the protocol optional since it isn't actually included in the responses
-        $hostnameRegex = '/(?:(https|http)\:\/\/)?[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com[\/]?/';
-        return (bool)preg_match($hostnameRegex, $request->get('shop'));
-    }
-
-    /**
-     * @param string $baseUrl
-     * @param array $queryArgs
-     * @return string
-     */
-    protected function constructUrl(string $baseUrl, array $queryArgs = [])
-    {
-        $url = $baseUrl;
-        if (!empty($queryArgs)) {
-            $url = "$url?{$this->constructUrlParams($queryArgs)}";
-        }
-        return $url;
-    }
-
-    /**
-     * @param array $queryArgs
-     * @return string
-     */
-    protected function constructUrlParams(array $queryArgs)
-    {
-        $args = [];
-        foreach ($queryArgs as $key => $value ) {
-            $args[] = "{$key}={$value}";
-        }
-        return implode('&', $args);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getInstallNonce()
-    {
-        return 'MY-PLACEHOLDER-NONCE'; // TODO: nonce should be unique and randomly generated
-    }
 }
