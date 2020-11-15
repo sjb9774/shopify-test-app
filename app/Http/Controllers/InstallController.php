@@ -75,7 +75,7 @@ class InstallController extends Controller
     protected function registerUninstallWebhook($shopName, $accessToken)
     {
         $uninstallUri = $this->urlGenerator->route('uninstallHook');
-        Log::info("Creating app/uninstalled webhook for $shopName @ $uninstallUri")
+        Log::info("Creating app/uninstalled webhook for $shopName @ $uninstallUri");
         $response = Http::withHeaders([
             'X-Shopify-Access-Token' => $accessToken
         ])->post("https://{$shopName}/admin/api/2020-07/webhooks.json",
