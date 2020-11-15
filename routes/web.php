@@ -23,8 +23,8 @@ Route::middleware([\App\Http\Middleware\ShopifyVerify::class])->group(function()
     Route::get('example', [\App\Http\Controllers\ViewController::class, 'example']);
     Route::get('dashboard', [\App\Http\Controllers\InstallController::class, 'dashboard'])->name('dashboard');
     Route::get('install', [\App\Http\Controllers\InstallController::class, 'install'])->name('install');
-    Route::post('uninstall', [\App\Http\Controllers\InstallController::class, 'uninstall'])->name('uninstallHook');
     Route::get('auth', [\App\Http\Controllers\InstallController::class, 'auth'])->name('auth_redirect');
+    Route::post('uninstall', [\App\Http\Controllers\InstallController::class, 'uninstall'])->name('uninstallHook');
 });
 
 Route::middleware([\App\Http\Middleware\AppBridgeVerify::class])->group(function () {
