@@ -18,7 +18,7 @@ class CreateConfigsTable extends Migration
             $table->string('name');
             $table->string('value');
             $table->unsignedBigInteger('shop_id');
-            $table->foreign('shop_id')->references('id')->on('shops');
+            $table->foreign('shop_id')->references('id')->on('shops')->cascadeOnDelete();
             $table->timestamps();
         });
     }
