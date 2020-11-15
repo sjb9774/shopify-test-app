@@ -18,5 +18,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('install', [\App\Http\Controllers\InstallController::class, 'install']);
+Route::get('shopify', [\App\Http\Controllers\InstallController::class, 'shopifyMain']);
+Route::get('dashboard', [\App\Http\Controllers\InstallController::class, 'dashboard'])->name('dashboard');
+Route::get('install', [\App\Http\Controllers\InstallController::class, 'install'])->name('install');
 Route::get('auth', [\App\Http\Controllers\InstallController::class, 'auth'])->name('auth_redirect');

@@ -29,6 +29,30 @@ class InstallController extends Controller
         $this->urlGenerator = $urlGenerator;
     }
 
+    public function shopifyMain(Request $request)
+    {
+        if (isset(PHPShopify\ShopifySDK::$config['AccessToken'])) {
+            return redirect(
+                $this->urlGenerator->route(
+                    'dashboard',
+                    $request->all()
+                ),
+            );
+        } else {
+            return redirect(
+                $this->urlGenerator->route(
+                    'install',
+                    $request->all()
+                )
+            );
+        }
+    }
+
+    public function dashboard(Request $request)
+    {
+        return view('dashboard');
+    }
+
     /**
      * Shopify makes a request to this endpoint to determine the app's identity, required resources, and the redirect
      * path so it can advise the merchant appropriately before beginning the OAuth flow
@@ -38,19 +62,9 @@ class InstallController extends Controller
      */
     public function install(Request $request)
     {
-        $shopName = $request->get('shop');
         $scopes = 'read_script_tags,write_script_tags,write_orders';
-        $publicKey = env('API_PUBLIC_KEY');
-        $privateKey = env('API_PRIVATE_KEY');
         $redirect = $this->urlGenerator->route('auth_redirect');
 
-        $config = [
-            "ShopUrl" => $shopName,
-            "ApiKey" => $publicKey,
-            "SharedSecret" => $privateKey
-        ];
-
-        PHPShopify\ShopifySDK::config($config);
         $url = PHPShopify\AuthHelper::createAuthRequest($scopes, $redirect, null, null, true);
 
         return redirect($url);
@@ -67,22 +81,18 @@ class InstallController extends Controller
     public function auth(Request $request)
     {
         $shopName = $request->get('shop');
-        $publicKey = env('API_PUBLIC_KEY');
-        $privateKey = env('API_PRIVATE_KEY');
 
-        $config = [
-            "ShopUrl" => $shopName,
-            "ApiKey" => $publicKey,
-            "SharedSecret" => $privateKey
-        ];
+        if (!isset(PHPShopify\ShopifySDK::$config['AccessToken'])) {
+            $accessToken = PHPShopify\AuthHelper::getAccessToken();
 
-        PHPShopify\ShopifySDK::config($config);
-        $accessToken = PHPShopify\AuthHelper::getAccessToken();
-        $shopModel = new Shop();
-        $shopModel->shop = $shopName;
-        $shopModel->access_token = $accessToken;
-        $shopModel->save();
-        return response("Successfully authenticated, webhooks created; access token: {$accessToken}"); // TODO: don't expose access token to public, probably not wise
+            $shopModel = new Shop();
+            $shopModel->shop = $shopName;
+            $shopModel->access_token = $accessToken;
+            $shopModel->save();
+
+            return view('shopify');
+        }
+        return view('shopify');
     }
 
     /**
